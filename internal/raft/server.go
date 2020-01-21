@@ -12,9 +12,20 @@ import (
 type NodeServer struct {
 	Addr        string
 	IdleTimeout time.Duration
+	BufferSize  int64
 	inShutdown  bool
 	listener    net.Listener
-	conns []*Conn
+	conns       []*Conn
+}
+
+func NewNodeServer(addr string, idleTimeout time.Duration, buffer int64) *NodeServer {
+	return &NodeServer{
+		Addr:        addr,
+		IdleTimeout: idleTimeout,
+		inShutdown:  false,
+		conns:       make([]*Conn, 0),
+		BufferSize:  buffer,
+	}
 }
 
 func (srv *NodeServer) ListenAndServe() error {
@@ -39,7 +50,7 @@ func (srv *NodeServer) ListenAndServe() error {
 		}
 		newConn, err := srv.listener.Accept()
 		if err != nil {
-			fmt.Printf("error accepting connection %v", err)
+			fmt.Printf("error accepting connection %v\n", err)
 			continue
 		}
 
@@ -52,7 +63,7 @@ func (srv *NodeServer) ListenAndServe() error {
 
 		srv.conns = append(srv.conns, conn)
 
-		fmt.Printf("accepted connection from %v", conn.RemoteAddr())
+		fmt.Printf("accepted connection from %v\n", conn.RemoteAddr())
 		go srv.handle(conn)
 	}
 }
@@ -62,6 +73,7 @@ func (srv *NodeServer) handle(conn net.Conn) {
 		fmt.Printf("closing connection from %v\n", conn.RemoteAddr())
 		_ = conn.Close()
 	}()
+
 	r := bufio.NewReader(conn)
 	w := bufio.NewWriter(conn)
 	scanner := bufio.NewScanner(r)
@@ -92,7 +104,7 @@ func (srv *NodeServer) Shutdown() {
 	for {
 		select {
 		case <-ticker.C:
-			fmt.Printf("waiting on %v connections", len(srv.conns))
+			fmt.Printf("waiting on %v connections\n", len(srv.conns))
 		}
 		if len(srv.conns) == 0 {
 			return
@@ -113,7 +125,7 @@ func (c *Conn) Write(p []byte) (int, error) {
 
 func (c *Conn) Read(b []byte) (int, error) {
 	c.updateDeadline()
-	r := io.LimitReader(c.Conn, c.MaxReadBuffer)
+	r := io.LimitReader(c.Conn, 1048576)
 	return r.Read(b)
 }
 

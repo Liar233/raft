@@ -2,11 +2,9 @@ package raft
 
 import "fmt"
 
-const Hello = "Hello"
-
 var Config *AppConfig
 
-func StartApp(filename string)  {
+func StartApp(filename string) {
 	var err error
 	Config, err = parseConfig(filename)
 
@@ -15,5 +13,11 @@ func StartApp(filename string)  {
 		return
 	}
 
-	fmt.Printf("%+v", Config)
+	node := NewNode(Config)
+
+	err = node.Start()
+
+	if err != nil {
+		fmt.Println(err.Error())
+	}
 }
