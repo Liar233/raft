@@ -1,0 +1,11 @@
+elaction-timeout: 5
+nodes:
+  node-1:
+    host: raft-1
+    port: 6000
+  node-2:
+    host: raft-2
+    port: 6000
+  node-3:
+    host: raft-3
+    port: 6000
